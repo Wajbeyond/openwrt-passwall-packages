@@ -1,7 +1,7 @@
 ```yaml
 name: Build GeoView 0.2.7 ARM64
 
-on:
+"on":
   workflow_dispatch:
 
 jobs:
@@ -9,31 +9,29 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git wget zstd file
+      - name: Install Git
+        run: sudo apt-get update && sudo apt-get install -y git wget zstd build-essential
 
-      - name: Download OpenWrt SDK
+      - name: Download SDK
+        run: wget -q "https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/openwrt-sdk-24.10.5-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64.tar.zst" -O sdk.tar.zst
+
+      - name: Extract SDK
         run: |
-          wget -q https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/openwrt-sdk-24.10.5-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64.tar.zst -O sdk.tar.zst
           mkdir sdk
           tar --use-compress-program=unzstd -xf sdk.tar.zst -C sdk --strip-components=1
 
-      - name: Clone PassWall packages
-        run: |
-          git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git sdk/package/passwall-packages
+      - name: Get PassWall packages
+        run: git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git sdk/package/passwall-packages
 
-      - name: Compile GeoView
+      - name: Build GeoView
         run: |
           cd sdk
           make defconfig
           make package/passwall-packages/geoview/compile V=s
 
-      - name: Find IPK
+      - name: Show IPK
         run: |
-          find sdk/bin/packages -type f -name 'geoview*.ipk' -print
-          find sdk/bin/packages -type f -name 'geoview*.ipk' -exec sha256sum {} \;
+          find sdk/bin/packages -name "geoview*.ipk" -exec ls -lh {} \;
 
       - name: Upload IPK
         uses: actions/upload-artifact@v4
